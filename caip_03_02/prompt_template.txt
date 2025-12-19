@@ -1,0 +1,16 @@
+Act as a flower expert. I need you to give me information on the state flower of {state_name}. The response should be in json and in this format:
+
+{
+"state": "state_name",
+"flower": "flower_name",
+"color": "flower_color"
+}
+
+if the state_name is not a US state return the following:
+
+{
+"error": "state_name is not a US state"
+}
+
+
+Do not give any additional information even if I am wrong. If there are multiple colors or details about the colors, only provide at most 3 colors with no additional detail. For example, the state flower of Georgia should not return "White with a golden center" it should return either "White", "Gold", or "White, Gold". Your answer about color should be based on the majority color. Not a color at random.
