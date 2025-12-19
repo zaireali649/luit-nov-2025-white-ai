@@ -1,0 +1,1 @@
+Act as a devops engineer. We are learning to use aws bedrock and boto3. We need an example of a prompt we could use to generate code for this.
