@@ -1,0 +1,101 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CAIP 04 - SageMaker Studio Domain, Role, and S3 Bucket
+
+Parameters:
+  BucketNameSuffix:
+    Type: String
+    Description: Unique suffix for bucket naming (e.g., your name or initials)
+    AllowedPattern: '^[a-z0-9-]+$'
+
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC for SageMaker Studio
+
+  SubnetId:
+    Type: AWS::EC2::Subnet::Id
+    Description: Public subnet in the VPC
+
+Resources:
+  CAIPBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "caip04-ml-bucket-${BucketNameSuffix}"
+
+  SageMakerExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "caip04-execution-role-${BucketNameSuffix}"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: sagemaker.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: SageMakerBasicAccess
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:*
+                Resource:
+                  - "*"
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                  - logs:DescribeLogGroups
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - sagemaker:*
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - ecr:*
+                Resource: "*"
+
+
+  SageMakerDomain:
+    Type: AWS::SageMaker::Domain
+    Properties:
+      AuthMode: IAM
+      DomainName: !Sub "caip04-studio-domain-${BucketNameSuffix}"
+      AppNetworkAccessType: PublicInternetOnly
+      DefaultUserSettings:
+        ExecutionRole: !GetAtt SageMakerExecutionRole.Arn
+      SubnetIds:
+        - !Ref SubnetId
+      VpcId: !Ref VpcId
+
+  StudioUserProfile:
+    Type: AWS::SageMaker::UserProfile
+    Properties:
+      DomainId: !Ref SageMakerDomain
+      UserProfileName: caip04-user
+      UserSettings:
+        ExecutionRole: !GetAtt SageMakerExecutionRole.Arn
+
+Outputs:
+  BucketName:
+    Description: S3 bucket for Titanic data and model artifacts
+    Value: !Ref CAIPBucket
+    Export:
+      Name: caip04Bucket
+
+  RoleArn:
+    Description: SageMaker execution role
+    Value: !GetAtt SageMakerExecutionRole.Arn
+    Export:
+      Name: caip04RoleArn
+
+  DomainId:
+    Description: SageMaker Studio Domain ID
+    Value: !Ref SageMakerDomain
+
+  StudioUserName:
+    Description: SageMaker Studio User
+    Value: caip04-user
